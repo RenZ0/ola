@@ -67,6 +67,8 @@ DmxTriWidgetImpl::DmxTriWidgetImpl(
     ola::io::ConnectedDescriptor *descriptor,
     bool use_raw_rdm)
     : BaseUsbProWidget(descriptor),
+      m_watchdog(WATCHDOG_LIMIT,
+                 NewCallback(this, &DmxTriWidgetImpl::WatchdogFired)),
       m_scheduler(scheduler),
       m_uid_count(0),
       m_last_esta_id(UID::ALL_MANUFACTURERS),
@@ -89,6 +91,15 @@ DmxTriWidgetImpl::~DmxTriWidgetImpl() {
   Stop();
 }
 
+void DmxTriWidgetImpl::ClockWatchdog() {
+  m_watchdog.Clock();
+  m_watchdog.Enable();
+}
+
+void DmxTriWidgetImpl::WatchdogFired() {
+  OLA_WARN << "DMX-TRI timeout, pass this transaction";
+  m_delay_transaction = false;
+}
 
 /**
  * Stop the rdm discovery process if it's running
@@ -857,14 +868,15 @@ bool DmxTriWidgetImpl::PendingTransaction() const {
 void DmxTriWidgetImpl::MaybeSendNextRequest() {
   // sending may fail, so we loop until there is nothing to do or there is a
   // transaction pending.
-  bool first = true;
+  //~ bool first = true;
+  m_delay_transaction = true;
   while (true) {
     if (PendingTransaction()) {
-      if (first)
+      if (m_delay_transaction)
         OLA_DEBUG << "Transaction in progress, delaying send";
       return;
     }
-    first = false;
+    m_delay_transaction = false;
 
     if (m_outgoing_dmx.Size() && m_last_command != SINGLE_TX_COMMAND_ID) {
       // avoid starving out DMX frames

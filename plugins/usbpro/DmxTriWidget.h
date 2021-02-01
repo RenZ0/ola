@@ -31,6 +31,7 @@
 #include "ola/rdm/UIDSet.h"
 #include "ola/thread/SchedulerInterface.h"
 #include "plugins/usbpro/BaseUsbProWidget.h"
+#include "ola/util/Watchdog.h"
 
 namespace ola {
 namespace plugin {
@@ -57,6 +58,10 @@ class DmxTriWidgetImpl: public BaseUsbProWidget,
                         ola::rdm::RDMCallback *on_complete);
     void RunFullDiscovery(ola::rdm::RDMDiscoveryCallback *callback);
     void RunIncrementalDiscovery(ola::rdm::RDMDiscoveryCallback *callback);
+
+    Watchdog m_watchdog;
+    void ClockWatchdog();
+    void WatchdogFired();
 
  private:
     typedef enum {
@@ -87,6 +92,11 @@ class DmxTriWidgetImpl: public BaseUsbProWidget,
     uint8_t m_uid_count;
     uint16_t m_last_esta_id;
     bool m_use_raw_rdm;
+    bool m_delay_transaction;
+    // This gives a limit between 2 and 3s ?
+    static const unsigned int WATCHDOG_LIMIT = 3;
+    //~ Watchdog m_watchdog;
+    //~ void WatchdogFired();
 
     // State for sending DMX
     DmxBuffer m_outgoing_dmx;
