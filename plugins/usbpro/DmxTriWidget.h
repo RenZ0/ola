@@ -59,10 +59,6 @@ class DmxTriWidgetImpl: public BaseUsbProWidget,
     void RunFullDiscovery(ola::rdm::RDMDiscoveryCallback *callback);
     void RunIncrementalDiscovery(ola::rdm::RDMDiscoveryCallback *callback);
 
-    Watchdog m_watchdog;
-    void ClockWatchdog();
-    void WatchdogFired();
-
  private:
     typedef enum {
       SINGLE_TX_COMMAND_ID = 0x21,
@@ -85,18 +81,21 @@ class DmxTriWidgetImpl: public BaseUsbProWidget,
       FETCH_UID_REQUIRED,
     } TriDiscoveryState;
 
+    Watchdog m_watchdog;
+    // This gives a limit between 2 and 3s ?
+    static const unsigned int WATCHDOG_LIMIT = 3;
+    bool m_delay_transaction;
+    void ClockWatchdog();
+    void WatchdogFired();
+
     typedef std::map<ola::rdm::UID, uint8_t> UIDToIndexMap;
 
     ola::thread::SchedulerInterface *m_scheduler;
+    ola::thread::timeout_id m_watchdog_timer_id;
     UIDToIndexMap m_uid_index_map;
     uint8_t m_uid_count;
     uint16_t m_last_esta_id;
     bool m_use_raw_rdm;
-    bool m_delay_transaction;
-    // This gives a limit between 2 and 3s ?
-    static const unsigned int WATCHDOG_LIMIT = 3;
-    //~ Watchdog m_watchdog;
-    //~ void WatchdogFired();
 
     // State for sending DMX
     DmxBuffer m_outgoing_dmx;

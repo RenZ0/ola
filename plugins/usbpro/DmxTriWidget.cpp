@@ -70,6 +70,7 @@ DmxTriWidgetImpl::DmxTriWidgetImpl(
       m_watchdog(WATCHDOG_LIMIT,
                  NewCallback(this, &DmxTriWidgetImpl::WatchdogFired)),
       m_scheduler(scheduler),
+      m_watchdog_timer_id(ola::thread::INVALID_TIMEOUT),
       m_uid_count(0),
       m_last_esta_id(UID::ALL_MANUFACTURERS),
       m_use_raw_rdm(use_raw_rdm),
@@ -81,6 +82,10 @@ DmxTriWidgetImpl::DmxTriWidgetImpl(
       m_transaction_number(0),
       m_last_command(RESERVED_COMMAND_ID),
       m_expected_command(RESERVED_COMMAND_ID) {
+
+    m_watchdog_timer_id = m_scheduler->RegisterRepeatingTimeout(
+    TimeInterval(1, 0),
+    NewCallback(this, &DmxTriWidgetImpl::Watchdog));
 }
 
 
@@ -89,6 +94,10 @@ DmxTriWidgetImpl::DmxTriWidgetImpl(
  */
 DmxTriWidgetImpl::~DmxTriWidgetImpl() {
   Stop();
+}
+
+bool DmxTriWidgetImpl::Watchdog() {
+    return true;
 }
 
 void DmxTriWidgetImpl::ClockWatchdog() {
@@ -105,6 +114,11 @@ void DmxTriWidgetImpl::WatchdogFired() {
  * Stop the rdm discovery process if it's running
  */
 void DmxTriWidgetImpl::Stop() {
+  if (m_watchdog_timer_id != ola::thread::INVALID_TIMEOUT) {
+    m_scheduler->RemoveTimeout(m_watchdog_timer_id);
+    m_watchdog_timer_id = ola::thread::INVALID_TIMEOUT;
+  }
+
   if (m_disc_stat_timeout_id != ola::thread::INVALID_TIMEOUT) {
     m_scheduler->RemoveTimeout(m_disc_stat_timeout_id);
     m_disc_stat_timeout_id = ola::thread::INVALID_TIMEOUT;
