@@ -85,6 +85,7 @@ class DmxTriWidgetImpl: public BaseUsbProWidget,
     // This gives a limit between 2 and 3s ?
     static const unsigned int WATCHDOG_LIMIT = 3;
     bool m_delay_transaction;
+    bool MasterClockWatchdog();
     void ClockWatchdog();
     void WatchdogFired();
 

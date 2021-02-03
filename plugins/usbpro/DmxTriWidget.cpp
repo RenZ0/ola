@@ -83,9 +83,9 @@ DmxTriWidgetImpl::DmxTriWidgetImpl(
       m_last_command(RESERVED_COMMAND_ID),
       m_expected_command(RESERVED_COMMAND_ID) {
 
-    m_watchdog_timer_id = m_scheduler->RegisterRepeatingTimeout(
-    TimeInterval(1, 0),
-    NewCallback(this, &DmxTriWidgetImpl::Watchdog));
+      m_watchdog_timer_id = m_scheduler->RegisterRepeatingTimeout(
+      TimeInterval(1, 0),
+      NewCallback(this, &DmxTriWidgetImpl::MasterClockWatchdog));
 }
 
 
@@ -96,13 +96,13 @@ DmxTriWidgetImpl::~DmxTriWidgetImpl() {
   Stop();
 }
 
-bool DmxTriWidgetImpl::Watchdog() {
-    return true;
+bool DmxTriWidgetImpl::MasterClockWatchdog() {
+  ClockWatchdog();
+  return true;
 }
 
 void DmxTriWidgetImpl::ClockWatchdog() {
   m_watchdog.Clock();
-  m_watchdog.Enable();
 }
 
 void DmxTriWidgetImpl::WatchdogFired() {
