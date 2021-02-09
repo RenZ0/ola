@@ -107,7 +107,8 @@ void DmxTriWidgetImpl::ClockWatchdog() {
 
 void DmxTriWidgetImpl::WatchdogFired() {
   OLA_WARN << "DMX-TRI timeout, pass this transaction";
-  m_delay_transaction = false;
+  //reset pending transaction flag
+  m_expected_command = RESERVED_COMMAND_ID;
 }
 
 /**
@@ -347,6 +348,9 @@ void DmxTriWidgetImpl::HandleMessage(uint8_t label,
   } else {
     OLA_INFO << "DMX-TRI got response " << static_cast<int>(label);
   }
+
+  m_watchdog.Disable();
+  OLA_DEBUG << "Watchdog disabled";
 }
 
 
@@ -882,29 +886,44 @@ bool DmxTriWidgetImpl::PendingTransaction() const {
 void DmxTriWidgetImpl::MaybeSendNextRequest() {
   // sending may fail, so we loop until there is nothing to do or there is a
   // transaction pending.
-  //~ bool first = true;
-  m_delay_transaction = true;
+  bool first = true;
   while (true) {
     if (PendingTransaction()) {
-      if (m_delay_transaction)
-        OLA_DEBUG << "Transaction in progress, delaying send";
+      if (first)
+        OLA_WARN << "Transaction in progress, delaying send";
       return;
     }
-    m_delay_transaction = false;
+    first = false;
 
     if (m_outgoing_dmx.Size() && m_last_command != SINGLE_TX_COMMAND_ID) {
+      m_watchdog.Enable();
+      OLA_DEBUG << "Watchdog enabled";
       // avoid starving out DMX frames
       SendDMXBuffer();
     } else if (m_pending_rdm_request.get()) {
       // there is an RDM command to send
       SendQueuedRDMCommand();
     } else if (m_discovery_state == DISCOVER_AUTO_REQUIRED) {
+      if (!m_use_raw_rdm) {
+        m_watchdog.Enable();
+        OLA_DEBUG << "Watchdog enabled";
+      }
       SendDiscoveryAuto();
     } else if (m_discovery_state == DISCOVER_STATUS_REQUIRED) {
+      if (!m_use_raw_rdm) {
+        m_watchdog.Enable();
+        OLA_DEBUG << "Watchdog enabled";
+      }
       SendDiscoveryStat();
     } else if (m_discovery_state == FETCH_UID_REQUIRED) {
+      if (!m_use_raw_rdm) {
+        m_watchdog.Enable();
+        OLA_DEBUG << "Watchdog enabled";
+      }
       FetchNextUID();
     } else if (m_outgoing_dmx.Size()) {
+      m_watchdog.Enable();
+      OLA_DEBUG << "Watchdog enabled";
       // there is a DMX frame to send
       SendDMXBuffer();
     } else {

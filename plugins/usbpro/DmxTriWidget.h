@@ -82,9 +82,8 @@ class DmxTriWidgetImpl: public BaseUsbProWidget,
     } TriDiscoveryState;
 
     Watchdog m_watchdog;
-    // This gives a limit between 2 and 3s ?
+    // This gives a limit between x-1 and x seconds.
     static const unsigned int WATCHDOG_LIMIT = 3;
-    bool m_delay_transaction;
     bool MasterClockWatchdog();
     void ClockWatchdog();
     void WatchdogFired();
